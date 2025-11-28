@@ -5,35 +5,18 @@ pipeline {
         stage('Build') {
             agent {
                 docker {
-                    image 'node:24-alpine' // Node 24, compatible avec ton setup local
+                    image 'node:18-alpine'
                     reuseNode true
                 }
             }
             steps {
                 sh '''
-                    echo "Workspace contents:"
-                    ls -la
-
-                    echo "Node and npm versions:"
-                    node --version
-                    npm --version
-
-                    echo "Upgrading npm to v9 to fix CI bug..."
-                    npm install -g npm@9
-                    npm --version
-
-                    echo "Cleaning previous installs..."
-                    rm -rf node_modules
-                    npm cache clean --force
-
-                    echo "Installing dependencies..."
-                    npm ci --prefer-offline --no-audit --progress=false
-
-                    echo "Running build..."
-                    npm run build || echo "No build script, skipping"
-
-                    echo "Final workspace contents:"
-                    ls -la
+                   ls -la
+                   node --version
+                   npm --version
+                   npm ci
+                   npm run build
+                   ls -la
                 '''
             }
         }
