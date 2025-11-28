@@ -5,7 +5,7 @@ pipeline {
         stage('Build') {
             agent {
                 docker {
-                    image 'node:18'
+                    image 'node:18-slim'
                     reuseNode true
                 }
             }
@@ -14,9 +14,8 @@ pipeline {
                    ls -la
                    node --version
                    npm --version
-                   npm install
+                   npm ci --prefer-offline
                    npm run build
-                   ls -la
                 '''
             }
         }
