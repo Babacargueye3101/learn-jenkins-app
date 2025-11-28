@@ -18,6 +18,10 @@ pipeline {
                     node --version
                     npm --version
 
+                    echo "Upgrading npm to v9 to fix CI bug..."
+                    npm install -g npm@9
+                    npm --version
+
                     echo "Cleaning previous installs..."
                     rm -rf node_modules
                     npm cache clean --force
