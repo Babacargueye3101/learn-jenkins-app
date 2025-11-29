@@ -2,6 +2,7 @@ pipeline {
     agent any
 
     stages {
+
         stage('Build') {
             agent {
                 docker {
@@ -11,17 +12,20 @@ pipeline {
             }
             steps {
                 sh '''
-                   ls -la
+                   echo "--- BUILD STAGE ---"
                    node --version
                    npm --version
+
                    npm ci
                    npm run build
-                   ls -la
+
+                   echo "Build completed:"
+                   ls -la build
                 '''
             }
         }
-        stage('Test') {
 
+        stage('Test') {
             agent {
                 docker {
                     image 'node:18-alpine'
@@ -30,12 +34,15 @@ pipeline {
             }
             steps {
                 sh '''
-                  test -f build/index.html
-                  npm test
+                  echo "--- UNIT TEST STAGE ---"
+
+                  test -f build/index.html   # vérifie que build existe
+                  npm test --if-present
                 '''
             }
         }
-        stage('E2E'){
+
+        stage('E2E') {
             agent {
                 docker {
                     image 'mcr.microsoft.com/playwright:v1.42.1-jammy'
@@ -44,8 +51,21 @@ pipeline {
             }
             steps {
                 sh '''
-                  npm install server
-                  node_modules/.bin/serve -s build
+                  echo "--- E2E TEST STAGE ---"
+
+                  # Important : Playwright container est vide → il faut réinstaller les deps
+                  npm ci
+
+                  # Installer serve globalement
+                  npm install -g serve
+
+                  # Lancer le serveur React en arrière-plan
+                  serve -s build -l 3000 &
+
+                  # Laisser le serveur démarrer
+                  sleep 5
+
+                  # Lancer les tests Playwright
                   npx playwright test
                 '''
             }
