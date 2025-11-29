@@ -51,22 +51,17 @@ pipeline {
             }
             steps {
                 sh '''
-                  echo "--- E2E TEST STAGE ---"
+                    # installer serve localement
+                    npm install serve
 
-                  # Important : Playwright container est vide → il faut réinstaller les deps
-                  npm ci
+                    # lancer le serveur en arrière-plan
+                    npx serve -s build -l 3000 &
 
-                  # Installer serve globalement
-                  npm install -g serve
+                    # attendre le démarrage du serveur
+                    sleep 3
 
-                  # Lancer le serveur React en arrière-plan
-                  npx serve -s build -l 3000 &
-
-                  # Laisser le serveur démarrer
-                  sleep 5
-
-                  # Lancer les tests Playwright
-                  npx playwright test
+                    # lancer les tests Playwright
+                    npx playwright test
                 '''
             }
         }
