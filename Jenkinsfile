@@ -60,7 +60,7 @@ pipeline {
                   npm install -g serve
 
                   # Lancer le serveur React en arrière-plan
-                  serve -s build -l 3000 &
+                  npx serve -s build -l 3000 &
 
                   # Laisser le serveur démarrer
                   sleep 5
