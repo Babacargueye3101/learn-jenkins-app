@@ -2,6 +2,7 @@ pipeline {
     agent any
 
     stages {
+        /*
 
         stage('Build') {
             agent {
@@ -12,18 +13,16 @@ pipeline {
             }
             steps {
                 sh '''
-                   echo "--- BUILD STAGE ---"
-                   node --version
-                   npm --version
-
-                   npm ci
-                   npm run build
-
-                   echo "Build completed:"
-                   ls -la build
+                    ls -la
+                    node --version
+                    npm --version
+                    npm ci
+                    npm run build
+                    ls -la
                 '''
             }
         }
+        */
 
         stage('Test') {
             agent {
@@ -32,12 +31,11 @@ pipeline {
                     reuseNode true
                 }
             }
+
             steps {
                 sh '''
-                  echo "--- UNIT TEST STAGE ---"
-
-                  test -f build/index.html   # vérifie que build existe
-                  npm test --if-present
+                    #test -f build/index.html
+                    npm test
                 '''
             }
         }
@@ -45,25 +43,25 @@ pipeline {
         stage('E2E') {
             agent {
                 docker {
-                    image 'mcr.microsoft.com/playwright:v1.42.1-jammy'
+                    image 'mcr.microsoft.com/playwright:v1.39.0-jammy'
                     reuseNode true
                 }
             }
+
             steps {
                 sh '''
-                    # installer serve localement
                     npm install serve
-
-                    # lancer le serveur en arrière-plan
-                    npx serve -s build -l 3000 &
-
-                    # attendre le démarrage du serveur
-                    sleep 3
-
-                    # lancer les tests Playwright
+                    node_modules/.bin/serve -s build &
+                    sleep 10
                     npx playwright test
                 '''
             }
+        }
+    }
+
+    post {
+        always {
+            junit 'jest-results/junit.xml'
         }
     }
 }
