@@ -2,7 +2,6 @@ pipeline {
     agent any
 
     stages {
-        /*
 
         stage('Build') {
             agent {
@@ -13,29 +12,26 @@ pipeline {
             }
             steps {
                 sh '''
-                    ls -la
-                    node --version
-                    npm --version
                     npm ci
                     npm run build
-                    ls -la
                 '''
             }
         }
-        */
 
-        stage('Test') {
+        stage('Unit Tests') {
             agent {
                 docker {
                     image 'node:18-alpine'
                     reuseNode true
                 }
             }
-
             steps {
                 sh '''
-                    #test -f build/index.html
-                    npm test
+                    # IMPORTANT : générer junit.xml
+                    CI=true npm test -- --watchAll=false
+
+                    # Vérification (optionnelle)
+                    ls -la jest-results || true
                 '''
             }
         }
@@ -47,12 +43,14 @@ pipeline {
                     reuseNode true
                 }
             }
-
             steps {
                 sh '''
                     npm install serve
-                    node_modules/.bin/serve -s build &
-                    sleep 10
+                    npx serve -s build -l 3000 &
+
+                    # Attendre le démarrage du serveur
+                    sleep 5
+
                     npx playwright test
                 '''
             }
@@ -61,6 +59,7 @@ pipeline {
 
     post {
         always {
+            echo "Collecting test results"
             junit 'jest-results/junit.xml'
         }
     }
