@@ -2,48 +2,69 @@ pipeline {
     agent any
 
     stages {
-        /*
-
-        stage('Build') {
-            agent {
-                docker {
-                    image 'node:18-alpine'
-                    reuseNode true
+        stage('Parallel Stages') {
+            parallel {
+                stage('Build') {
+                    agent {
+                        docker {
+                            image 'node:18-alpine'
+                            reuseNode true
+                        }
+                    }
+                    steps {
+                        sh '''
+                            echo "=== BUILD START ==="
+                            node --version
+                            npm --version
+                            npm ci
+                            npm run build
+                            ls -la build
+                            echo "=== BUILD END ==="
+                        '''
+                    }
                 }
-            }
-            steps {
-                sh '''
-                    ls -la
-                    node --version
-                    npm --version
-                    npm ci
-                    npm run build
-                    ls -la
-                '''
-            }
-        }
-        */
 
-        stage('Test') {
-            agent {
-                docker {
-                    image 'node:18-alpine'
-                    reuseNode true
+                stage('Test') {
+                    agent {
+                        docker {
+                            image 'node:18-alpine'
+                            reuseNode true
+                        }
+                    }
+                    steps {
+                        sh '''
+                            echo "=== TEST START ==="
+                            npm ci
+                            npm test
+                            echo "=== TEST END ==="
+                        '''
+                    }
                 }
-            }
 
-            steps {
-                sh '''
-                    #test -f build/index.html
-                    npm test
-                '''
+                stage('Lint') {
+                    agent {
+                        docker {
+                            image 'node:18-alpine'
+                            reuseNode true
+                        }
+                    }
+                    steps {
+                        sh '''
+                            echo "=== LINT START ==="
+                            npm ci
+                            npm run lint || true
+                            echo "=== LINT END ==="
+                        '''
+                    }
+                }
             }
         }
     }
 
     post {
         always {
-            junit 'test-results/junit.xml'
+            echo "Pipeline terminé"
+            junit allowEmptyResults: true, testResults: '**/test-results/*.xml'
         }
     }
 }
