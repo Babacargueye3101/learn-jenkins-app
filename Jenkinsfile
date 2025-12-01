@@ -2,69 +2,75 @@ pipeline {
     agent any
 
     stages {
-        stage('Parallel Stages') {
+        /*
+
+        stage('Build') {
+            agent {
+                docker {
+                    image 'node:18-alpine'
+                    reuseNode true
+                }
+            }
+            steps {
+                sh '''
+                    ls -la
+                    node --version
+                    npm --version
+                    npm ci
+                    npm run build
+                    ls -la
+                '''
+            }
+        }
+        */
+
+        stage('Tests') {
             parallel {
-                stage('Build') {
+                stage('Unit tests') {
                     agent {
                         docker {
                             image 'node:18-alpine'
                             reuseNode true
                         }
                     }
-                    steps {
-                        sh '''
-                            echo "=== BUILD START ==="
-                            node --version
-                            npm --version
-                            npm ci
-                            npm run build
-                            ls -la build
-                            echo "=== BUILD END ==="
-                        '''
-                    }
-                }
 
-                stage('Test') {
-                    agent {
-                        docker {
-                            image 'node:18-alpine'
-                            reuseNode true
-                        }
-                    }
                     steps {
                         sh '''
-                            echo "=== TEST START ==="
-                            npm ci
+                            #test -f build/index.html
                             npm test
-                            echo "=== TEST END ==="
                         '''
+                    }
+                    post {
+                        always {
+                            junit 'jest-results/junit.xml'
+                        }
                     }
                 }
 
-                stage('Lint') {
+                stage('E2E') {
                     agent {
                         docker {
-                            image 'node:18-alpine'
+                            image 'mcr.microsoft.com/playwright:v1.39.0-jammy'
                             reuseNode true
                         }
                     }
+
                     steps {
                         sh '''
-                            echo "=== LINT START ==="
-                            npm ci
-                            npm run lint || true
-                            echo "=== LINT END ==="
+                            npm install serve
+                            node_modules/.bin/serve -s build &
+                            sleep 10
+                            npx playwright test  --reporter=html
                         '''
+                    }
+
+                    post {
+                        always {
+                            publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'playwright-report', reportFiles: 'index.html', reportName: 'Playwright HTML Report', reportTitles: '', useWrapperFileDirectly: true])
+                        }
                     }
                 }
             }
-        }
-    }
-
-    post {
-        always {
-            echo "Pipeline terminé"
-            junit allowEmptyResults: true, testResults: '**/test-results/*.xml'
         }
     }
 }
